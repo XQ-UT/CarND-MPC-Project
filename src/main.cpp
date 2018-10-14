@@ -98,9 +98,19 @@ int main() {
           * Both are in between [-1, 1].
           *
           */
-          double steer_value;
-          double throttle_value;
+          Eigen::Map<Eigen::VectorXd> x_points(ptsx.data(), ptsx.size());
+          Eigen::Map<Eigen::VectorXd> y_points(ptsy.data(), ptsy.size());
+          Eigen::VectorXd coefficients = polyfit(x_points, y_points, 3); 
+          double cte = py - polyeval(coefficients, px) ;
+          double epsi = psi - atan(coefficients[1] + 2 * coefficients[2] * px + 3 * coefficients[3] * px * px);
 
+          Eigen::VectorXd state(6);
+          state << px, py, psi, v, cte, epsi;
+
+          vector<double> actuations = mpc.Solve(state, coefficients);
+          double steer_value = actuations[0];
+          double throttle_value = actuations[1];
+          
           json msgJson;
           // NOTE: Remember to divide by deg2rad(25) before you send the steering value back.
           // Otherwise the values will be in between [-deg2rad(25), deg2rad(25] instead of [-1, 1].
