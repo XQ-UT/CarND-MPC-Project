@@ -9,6 +9,9 @@ using CppAD::AD;
 size_t N = 10;
 double dt = 0.05;
 
+// This is needed to get out of static state.
+double ref_v = 20;
+
 size_t x_start = 0;
 size_t y_start = x_start + N;
 size_t psi_start = y_start + N;
@@ -42,20 +45,35 @@ class FG_eval {
     // `fg` a vector of the cost constraints, `vars` is a vector of variable values (state & actuators)
     // NOTE: You'll probably go back and forth between this function and
     // the Solver function below.
-    std::cout << "hello" << endl;
     fg[0] = 0.0;
+
+    // cte, epsi and speed error.
     for(int t = 0; t < N; ++t){
       fg[0] += CppAD::pow(vars[cte_start + t], 2);
       fg[0] += CppAD::pow(vars[epsi_start + t], 2);
+      fg[0] += CppAD::pow(vars[v_start + t] - ref_v, 2);
     }
+
+    // minimize steering and throttle.
     for(int t = 0; t < N - 1; ++t){
       fg[0] += CppAD::pow(vars[a_start + t], 2);
       fg[0] += CppAD::pow(vars[delta_start + t], 2);
     }
+
+    // minimize steering and throttle change.
     for(int t = 0; t < N - 2; ++t){
       fg[0] += CppAD::pow(vars[a_start + t + 1] - vars[a_start + t], 2);
       fg[0] += CppAD::pow(vars[delta_start + t + 1] - vars[delta_start + t], 2);
     }
+
+    cout << "fg[0]: " << fg[0] << endl;
+
+    fg[1 + x_start] = vars[x_start];
+    fg[1 + y_start] = vars[y_start];
+    fg[1 + psi_start] = vars[psi_start];
+    fg[1 + v_start] = vars[v_start];
+    fg[1 + cte_start] = vars[cte_start];
+    fg[1 + epsi_start] = vars[epsi_start];
 
     for(int t = 1; t < N; ++t){
       AD<double> x1 = vars[x_start + t];
@@ -164,7 +182,7 @@ vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs) {
   // options for IPOPT solver
   std::string options;
   // Uncomment this if you'd like more print information
-  options += "Integer print_level  12\n";
+  options += "Integer print_level  1\n";
   // NOTE: Setting sparse to true allows the solver to take advantage
   // of sparse routines, this makes the computation MUCH FASTER. If you
   // can uncomment 1 of these and see if it makes a difference or not but
@@ -179,12 +197,10 @@ vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs) {
   // place to return solution
   CppAD::ipopt::solve_result<Dvector> solution;
 
-  std::cout<< "before solving" << endl;
   // solve the problem
   CppAD::ipopt::solve<Dvector, FG_eval>(
       options, vars, vars_lowerbound, vars_upperbound, constraints_lowerbound,
       constraints_upperbound, fg_eval, solution);
-  std::cout<< "after solving" << endl;
 
   // Check some of the solution values
   ok &= solution.status == CppAD::ipopt::solve_result<Dvector>::success;
@@ -198,5 +214,10 @@ vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs) {
   //
   // {...} is shorthand for creating a vector, so auto x1 = {1.0,2.0}
   // creates a 2 element double vector.
-  return {solution.x[delta_start], solution.x[a_start]};
+  vector<double> result {solution.x[delta_start], solution.x[a_start]};
+  for(int i = 0; i < N; ++i){
+    result.push_back(solution.x[x_start + i]);
+    result.push_back(solution.x[y_start + i]);
+  }
+  return result;
 }

@@ -103,23 +103,27 @@ int main() {
           Eigen::VectorXd coefficients = polyfit(x_points, y_points, 3); 
           double cte = py - polyeval(coefficients, px) ;
           double epsi = psi - atan(coefficients[1] + 2 * coefficients[2] * px + 3 * coefficients[3] * px * px);
-
+          
           Eigen::VectorXd state(6);
           state << px, py, psi, v, cte, epsi;
 
-          vector<double> actuations = mpc.Solve(state, coefficients);
-          double steer_value = actuations[0];
-          double throttle_value = actuations[1];
+          vector<double> solution = mpc.Solve(state, coefficients);
+          double steer_value = solution[0];
+          double throttle_value = solution[1];
           
           json msgJson;
           // NOTE: Remember to divide by deg2rad(25) before you send the steering value back.
           // Otherwise the values will be in between [-deg2rad(25), deg2rad(25] instead of [-1, 1].
-          msgJson["steering_angle"] = steer_value;
+          msgJson["steering_angle"] = steer_value / deg2rad(25);
           msgJson["throttle"] = throttle_value;
 
           //Display the MPC predicted trajectory 
           vector<double> mpc_x_vals;
           vector<double> mpc_y_vals;
+          for(int i = 2; i < solution.size(); i+=2){
+            mpc_x_vals.push_back(solution[i]);
+            mpc_y_vals.push_back(solution[i+1]);
+          }
 
           //.. add (x,y) points to list here, points are in reference to the vehicle's coordinate system
           // the points in the simulator are connected by a Green line
@@ -130,6 +134,11 @@ int main() {
           //Display the waypoints/reference line
           vector<double> next_x_vals;
           vector<double> next_y_vals;
+
+          for(int i = 0; i < ptsx.size(); i++){
+            next_x_vals.push_back(ptsx[i]);
+            next_y_vals.push_back(ptsy[i]);
+          }
 
           //.. add (x,y) points to list here, points are in reference to the vehicle's coordinate system
           // the points in the simulator are connected by a Yellow line
