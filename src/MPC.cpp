@@ -7,7 +7,7 @@ using CppAD::AD;
 
 // TODO: Set the timestep length and duration
 size_t N = 20;
-double dt = 0.05;
+double dt = 0.1;
 
 // This is needed to get out of static state.
 double ref_v = 10;
