@@ -114,15 +114,24 @@ int main() {
           json msgJson;
           // NOTE: Remember to divide by deg2rad(25) before you send the steering value back.
           // Otherwise the values will be in between [-deg2rad(25), deg2rad(25] instead of [-1, 1].
-          msgJson["steering_angle"] = steer_value / deg2rad(25);
+          msgJson["steering_angle"] = -1 * steer_value / deg2rad(25);
           msgJson["throttle"] = throttle_value;
 
           //Display the MPC predicted trajectory 
           vector<double> mpc_x_vals;
           vector<double> mpc_y_vals;
+
+          // Lambda to convert map coordinate system to car coordinate system.
+          auto convert_func = [](double car_x, double car_y, double car_psi, double xm, double ym){
+            double xc = -car_x + cos(-car_psi) * xm - sin(-car_psi) * ym;
+            double yc = -car_y + sin(-car_psi) * xm + cos(-car_psi) * ym;
+            return std::make_pair(xc, yc);
+          };
+
           for(int i = 2; i < solution.size(); i+=2){
-            mpc_x_vals.push_back(solution[i]);
-            mpc_y_vals.push_back(solution[i+1]);
+            const auto point = convert_func(px, py, psi, solution[i], solution[i+1]);
+            mpc_x_vals.push_back(point.first);
+            mpc_y_vals.push_back(point.second);
           }
 
           //.. add (x,y) points to list here, points are in reference to the vehicle's coordinate system
@@ -136,8 +145,9 @@ int main() {
           vector<double> next_y_vals;
 
           for(int i = 0; i < ptsx.size(); i++){
-            next_x_vals.push_back(ptsx[i]);
-            next_y_vals.push_back(ptsy[i]);
+            const auto point = convert_func(px, py, psi, ptsx[i], ptsy[i]);
+            next_x_vals.push_back(point.first);
+            next_y_vals.push_back(point.second);
           }
 
           //.. add (x,y) points to list here, points are in reference to the vehicle's coordinate system
@@ -158,7 +168,8 @@ int main() {
           //
           // NOTE: REMEMBER TO SET THIS TO 100 MILLISECONDS BEFORE
           // SUBMITTING.
-          this_thread::sleep_for(chrono::milliseconds(100));
+
+          //this_thread::sleep_for(chrono::milliseconds(100));
           ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
         }
       } else {
