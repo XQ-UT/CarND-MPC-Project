@@ -123,8 +123,10 @@ int main() {
 
           // Lambda to convert map coordinate system to car coordinate system.
           auto convert_func = [](double car_x, double car_y, double car_psi, double xm, double ym){
-            double xc = -car_x + cos(-car_psi) * xm - sin(-car_psi) * ym;
-            double yc = -car_y + sin(-car_psi) * xm + cos(-car_psi) * ym;
+            double dx = xm - car_x;
+            double dy = ym - car_y;
+            double xc = cos(car_psi) * dx + sin(car_psi) * dy;
+            double yc = -sin(car_psi) * dx + cos(car_psi) * dy;
             return std::make_pair(xc, yc);
           };
 
