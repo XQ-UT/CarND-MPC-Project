@@ -25,26 +25,26 @@ All the points received are in global maps coordinate system, they are converted
 ```c++
     // Lambda to convert map coordinate system to car coordinate system.
     auto convert_func = [](double car_x, double car_y, double car_psi, double xm, double ym){
-    double dx = xm - car_x;
-    double dy = ym - car_y;
-    double xc = cos(car_psi) * dx + sin(car_psi) * dy;
-    double yc = -sin(car_psi) * dx + cos(car_psi) * dy;
-    return std::make_pair(xc, yc);
+        double dx = xm - car_x;
+        double dy = ym - car_y;
+        double xc = cos(car_psi) * dx + sin(car_psi) * dy;
+        double yc = -sin(car_psi) * dx + cos(car_psi) * dy;
+        return std::make_pair(xc, yc);
     }; 
 
     // convert points to car coordinates.
     for(int i = 0; i < ptsx.size(); ++i){
-    auto new_point = convert_func(px, py, psi, ptsx[i], ptsy[i]);
-    ptsx[i] = new_point.first;
-    ptsy[i] = new_point.second;
+        auto new_point = convert_func(px, py, psi, ptsx[i], ptsy[i]);
+        ptsx[i] = new_point.first;
+        ptsy[i] = new_point.second;
     }
     px = 0;
     py = 0;
     psi = 0;
 ```
-# Model Predictive Control with Latency
+## Model Predictive Control with Latency
 
-The latency effect is compensated by forcing first actuation to be 0 and our `dt` is set to 100 ms.
+The latency effect is compensated by forcing first actuation not to take effect and our `dt` is set to 100 ms.
 
 ```c++
  AD<double> delta0 = 0.0; 
