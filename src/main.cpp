@@ -108,6 +108,7 @@ int main() {
             return std::make_pair(xc, yc);
           }; 
 
+          // convert points to car coordinates.
           for(int i = 0; i < ptsx.size(); ++i){
             auto new_point = convert_func(px, py, psi, ptsx[i], ptsy[i]);
             ptsx[i] = new_point.first;
@@ -117,12 +118,11 @@ int main() {
           py = 0;
           psi = 0;
           
-          cout << "Fitting for " << ptsx.size() << " points" << endl;
           Eigen::Map<Eigen::VectorXd> x_points(ptsx.data(), ptsx.size());
           Eigen::Map<Eigen::VectorXd> y_points(ptsy.data(), ptsy.size());
 
           Eigen::VectorXd coefficients = polyfit(x_points, y_points, 3); 
-          double cte = polyeval(coefficients, px) - py;
+          double cte = py - polyeval(coefficients, px);
           double epsi = psi - atan(coefficients[1] + 2 * coefficients[2] * px + 3 * coefficients[3] * px * px);
           
           Eigen::VectorXd state(6);
@@ -181,7 +181,7 @@ int main() {
           // NOTE: REMEMBER TO SET THIS TO 100 MILLISECONDS BEFORE
           // SUBMITTING.
 
-          //this_thread::sleep_for(chrono::milliseconds(100));
+          this_thread::sleep_for(chrono::milliseconds(100));
           ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
         }
       } else {
