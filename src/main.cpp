@@ -98,10 +98,31 @@ int main() {
           * Both are in between [-1, 1].
           *
           */
+
+          // Lambda to convert map coordinate system to car coordinate system.
+          auto convert_func = [](double car_x, double car_y, double car_psi, double xm, double ym){
+            double dx = xm - car_x;
+            double dy = ym - car_y;
+            double xc = cos(car_psi) * dx + sin(car_psi) * dy;
+            double yc = -sin(car_psi) * dx + cos(car_psi) * dy;
+            return std::make_pair(xc, yc);
+          }; 
+
+          for(int i = 0; i < ptsx.size(); ++i){
+            auto new_point = convert_func(px, py, psi, ptsx[i], ptsy[i]);
+            ptsx[i] = new_point.first;
+            ptsy[i] = new_point.second;
+          }
+          px = 0;
+          py = 0;
+          psi = 0;
+          
+          cout << "Fitting for " << ptsx.size() << " points" << endl;
           Eigen::Map<Eigen::VectorXd> x_points(ptsx.data(), ptsx.size());
           Eigen::Map<Eigen::VectorXd> y_points(ptsy.data(), ptsy.size());
+
           Eigen::VectorXd coefficients = polyfit(x_points, y_points, 3); 
-          double cte = py - polyeval(coefficients, px) ;
+          double cte = polyeval(coefficients, px) - py;
           double epsi = psi - atan(coefficients[1] + 2 * coefficients[2] * px + 3 * coefficients[3] * px * px);
           
           Eigen::VectorXd state(6);
@@ -114,26 +135,16 @@ int main() {
           json msgJson;
           // NOTE: Remember to divide by deg2rad(25) before you send the steering value back.
           // Otherwise the values will be in between [-deg2rad(25), deg2rad(25] instead of [-1, 1].
-          msgJson["steering_angle"] = -1 * steer_value / deg2rad(25);
+          msgJson["steering_angle"] =  steer_value / deg2rad(25);
           msgJson["throttle"] = throttle_value;
 
           //Display the MPC predicted trajectory 
           vector<double> mpc_x_vals;
           vector<double> mpc_y_vals;
 
-          // Lambda to convert map coordinate system to car coordinate system.
-          auto convert_func = [](double car_x, double car_y, double car_psi, double xm, double ym){
-            double dx = xm - car_x;
-            double dy = ym - car_y;
-            double xc = cos(car_psi) * dx + sin(car_psi) * dy;
-            double yc = -sin(car_psi) * dx + cos(car_psi) * dy;
-            return std::make_pair(xc, yc);
-          };
-
           for(int i = 2; i < solution.size(); i+=2){
-            const auto point = convert_func(px, py, psi, solution[i], solution[i+1]);
-            mpc_x_vals.push_back(point.first);
-            mpc_y_vals.push_back(point.second);
+            mpc_x_vals.push_back(solution[i]);
+            mpc_y_vals.push_back(solution[i+1]);
           }
 
           //.. add (x,y) points to list here, points are in reference to the vehicle's coordinate system
@@ -147,9 +158,8 @@ int main() {
           vector<double> next_y_vals;
 
           for(int i = 0; i < ptsx.size(); i++){
-            const auto point = convert_func(px, py, psi, ptsx[i], ptsy[i]);
-            next_x_vals.push_back(point.first);
-            next_y_vals.push_back(point.second);
+            next_x_vals.push_back(ptsx[i]);
+            next_y_vals.push_back(ptsy[i]);
           }
 
           //.. add (x,y) points to list here, points are in reference to the vehicle's coordinate system
