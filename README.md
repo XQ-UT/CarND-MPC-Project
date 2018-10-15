@@ -23,31 +23,31 @@ I chose `N=20` and `dt=0.1` so that the horization is 2 seconds. dt is chosen as
 All the points received are in global maps coordinate system, they are converted to car coordinate system. It is required to draw reference and predicted trajectory.
 
 ```c++
-    // Lambda to convert map coordinate system to car coordinate system.
-    auto convert_func = [](double car_x, double car_y, double car_psi, double xm, double ym){
-        double dx = xm - car_x;
-        double dy = ym - car_y;
-        double xc = cos(car_psi) * dx + sin(car_psi) * dy;
-        double yc = -sin(car_psi) * dx + cos(car_psi) * dy;
-        return std::make_pair(xc, yc);
-    }; 
+// Lambda to convert map coordinate system to car coordinate system.
+auto convert_func = [](double car_x, double car_y, double car_psi, double xm, double ym){
+    double dx = xm - car_x;
+    double dy = ym - car_y;
+    double xc = cos(car_psi) * dx + sin(car_psi) * dy;
+    double yc = -sin(car_psi) * dx + cos(car_psi) * dy;
+    return std::make_pair(xc, yc);
+}; 
 
-    // convert points to car coordinates.
-    for(int i = 0; i < ptsx.size(); ++i){
-        auto new_point = convert_func(px, py, psi, ptsx[i], ptsy[i]);
-        ptsx[i] = new_point.first;
-        ptsy[i] = new_point.second;
-    }
-    px = 0;
-    py = 0;
-    psi = 0;
+// convert points to car coordinates.
+for(int i = 0; i < ptsx.size(); ++i){
+    auto new_point = convert_func(px, py, psi, ptsx[i], ptsy[i]);
+    ptsx[i] = new_point.first;
+    ptsy[i] = new_point.second;
+}
+px = 0;
+py = 0;
+psi = 0;
 ```
 ## Model Predictive Control with Latency
 
 The latency effect is compensated by forcing first actuation not to take effect and our `dt` is set to 100 ms.
 
 ```c++
- AD<double> delta0 = 0.0; 
+AD<double> delta0 = 0.0; 
 AD<double> a0 = 0.0; 
 if(t > 1){
     delta0 = vars[delta_start + t - 1];
